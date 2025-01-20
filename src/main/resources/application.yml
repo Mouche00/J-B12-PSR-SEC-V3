@@ -4,7 +4,7 @@ spring:
   config:
     import: optional:file:.env[.properties]
   datasource:
-    url: jdbc:postgresql://localhost:5432/${DB_NAME}
+    url: jdbc:postgresql://${DB_SERVICE_NAME:localhost}:5432/${DB_NAME}
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:root}
     driver-class-name: org.postgresql.Driver
@@ -19,6 +19,43 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
         show_sql: true
-server:
-  port: 8080
+
+  application:
+    name: keycloak
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8080/realms/PigeonSkyRace
+          jwk-set-uri: ${spring.security.oauth2.resourceserver.jwt.issuer-uri}/protocol/openid-connect/certs
+#      client:
+#        registration:
+#          keycloak:
+#            client-id: food-ordering-client
+#            client-secret: your-client-secret
+#            scope: openid,profile,email
+#            redirect-uri: http://localhost:8082/login/oauth2/code/keycloak
+#        provider:
+#          keycloak:
+#            issuer-uri: http://localhost:8088/realms/food-ordering-realm
+
 debug: true
+
+server:
+  port: 8443
+  ssl:
+    key-store: classpath:keystore/myapp-ssl.p12
+    key-store-password: password
+    key-store-type: PKCS12
+    key-alias: myapp
+    enabled: true
+
+logging:
+  level:
+    org.springframework.security: DEBUG
+    org.springframework.security.oauth2: DEBUG
+
+jwt:
+  auth:
+    converter:
+      resource-id: client

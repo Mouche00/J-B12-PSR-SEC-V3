@@ -1,13 +1,59 @@
-version: '3.8'
-
 services:
   db:
-    image: postgres:latest
+    image: postgres:17.2
     ports:
-      - "5432:5432"
-    env_file:
-      - .env
+      - ${DB_PORT:-5432}:${DB_PORT:-5432}
     environment:
-      - POSTGRES_USER=${DB_USERNAME}
-      - POSTGRES_PASSWORD=${DB_PASSWORD}
-      - POSTGRES_DB=${DB_NAME}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - ./db:/var/lib/postgresql/data
+    networks:
+      - backend
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0.7
+    command: start-dev --import-realm
+    volumes:
+      - ./keycloak/:/opt/keycloak/data/import/
+    environment:
+#      KC_DB: postgres
+#      KC_DB_URL: jdbc:postgresql://db:5432/${DB_NAME}
+#      KC_DB_USERNAME: ${DB_USERNAME}
+#      KC_DB_PASSWORD: ${DB_PASSWORD}
+      KC_HOSTNAME: ${KC_HOSTNAME:-localhost}
+      KC_HOSTNAME_PORT: ${KC_HOSTNAME_PORT:-8080}
+      KC_HOSTNAME_STRICT_BACKCHANNEL: "true"
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD}
+      KC_HEALTH_ENABLED: "true"
+      KC_LOG_LEVEL: info
+    ports:
+      - ${KC_HOSTNAME_PORT:-8080}:${KC_HOSTNAME_PORT:-8080}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://${KC_HOSTNAME:-localhost}:${KC_HOSTNAME_PORT:-8080}/health/ready"]
+      interval: 15s
+      timeout: 2s
+      retries: 15
+#    depends_on:
+#      - db
+    networks:
+      - backend
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8443:8443"
+    networks:
+      - backend
+    environment:
+      DB_SERVICE_NAME: db
+    depends_on:
+      - db
+      - keycloak
+
+networks:
+  backend:

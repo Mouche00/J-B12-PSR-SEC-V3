@@ -2,6 +2,7 @@ package org.yc.keycloak.conf;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.yc.keycloak.security.JwtConverter;
 import org.yc.keycloak.utils.enums.Role;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Bean;
@@ -33,6 +34,7 @@ public class SecurityConfig {
     private final AuthenticationProvider customAuthenticationProvider;
     private final AuthenticationEntryPoint customAuthenticationEntryPoint;
     private final AccessDeniedHandler customAccessDeniedHandler;
+    private final JwtConverter jwtConverter;
 
     private void configureAuthorization(HttpSecurity http) throws Exception {
         http.authorizeHttpRequests((authorize) -> authorize
@@ -69,6 +71,7 @@ public class SecurityConfig {
         configureSessionManagement(http);
         configureExploitProtections(http);
         configureExceptionHandling(http);
+        http.oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtConverter)));
         return http.build();
     }
 
